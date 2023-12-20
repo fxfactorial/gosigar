@@ -9,7 +9,6 @@ package gosigar
 #include <mach/mach_init.h>
 #include <mach/mach_host.h>
 #include <mach/host_info.h>
-#include <libproc.h>
 #include <mach/processor_info.h>
 #include <mach/vm_map.h>
 */
@@ -20,11 +19,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"os/user"
 	"runtime"
-	"strconv"
 	"syscall"
-	"time"
 	"unsafe"
 )
 
@@ -200,117 +196,117 @@ func (self *FileSystemList) Get() error {
 
 // Get returns a process list
 func (self *ProcList) Get() error {
-	n := C.proc_listpids(C.PROC_ALL_PIDS, 0, nil, 0)
-	if n <= 0 {
-		return syscall.EINVAL
-	}
-	buf := make([]byte, n)
-	n = C.proc_listpids(C.PROC_ALL_PIDS, 0, unsafe.Pointer(&buf[0]), n)
-	if n <= 0 {
-		return syscall.ENOMEM
-	}
+	// n := C.proc_listpids(C.PROC_ALL_PIDS, 0, nil, 0)
+	// if n <= 0 {
+	// 	return syscall.EINVAL
+	// }
+	// buf := make([]byte, n)
+	// n = C.proc_listpids(C.PROC_ALL_PIDS, 0, unsafe.Pointer(&buf[0]), n)
+	// if n <= 0 {
+	// 	return syscall.ENOMEM
+	// }
 
-	var pid int32
-	num := int(n) / binary.Size(pid)
-	list := make([]int, 0, num)
-	bbuf := bytes.NewBuffer(buf)
+	// var pid int32
+	// num := int(n) / binary.Size(pid)
+	// list := make([]int, 0, num)
+	// bbuf := bytes.NewBuffer(buf)
 
-	for i := 0; i < num; i++ {
-		if err := binary.Read(bbuf, binary.LittleEndian, &pid); err != nil {
-			return err
-		}
-		if pid == 0 {
-			continue
-		}
+	// for i := 0; i < num; i++ {
+	// 	if err := binary.Read(bbuf, binary.LittleEndian, &pid); err != nil {
+	// 		return err
+	// 	}
+	// 	if pid == 0 {
+	// 		continue
+	// 	}
 
-		list = append(list, int(pid))
-	}
+	// 	list = append(list, int(pid))
+	// }
 
-	self.List = list
+	// self.List = list
 
 	return nil
 }
 
 // Get returns process state data
 func (self *ProcState) Get(pid int) error {
-	info := C.struct_proc_taskallinfo{}
+	// info := C.struct_proc_taskallinfo{}
 
-	if err := taskInfo(pid, &info); err != nil {
-		return err
-	}
+	// if err := taskInfo(pid, &info); err != nil {
+	// 	return err
+	// }
 
-	self.Name = C.GoString(&info.pbsd.pbi_comm[0])
+	// self.Name = C.GoString(&info.pbsd.pbi_comm[0])
 
-	switch info.pbsd.pbi_status {
-	case C.SIDL:
-		self.State = RunStateIdle
-	case C.SRUN:
-		self.State = RunStateRun
-	case C.SSLEEP:
-		self.State = RunStateSleep
-	case C.SSTOP:
-		self.State = RunStateStop
-	case C.SZOMB:
-		self.State = RunStateZombie
-	default:
-		self.State = RunStateUnknown
-	}
+	// switch info.pbsd.pbi_status {
+	// case C.SIDL:
+	// 	self.State = RunStateIdle
+	// case C.SRUN:
+	// 	self.State = RunStateRun
+	// case C.SSLEEP:
+	// 	self.State = RunStateSleep
+	// case C.SSTOP:
+	// 	self.State = RunStateStop
+	// case C.SZOMB:
+	// 	self.State = RunStateZombie
+	// default:
+	// 	self.State = RunStateUnknown
+	// }
 
-	self.Ppid = int(info.pbsd.pbi_ppid)
+	// self.Ppid = int(info.pbsd.pbi_ppid)
 
-	self.Pgid = int(info.pbsd.pbi_pgid)
+	// self.Pgid = int(info.pbsd.pbi_pgid)
 
-	self.Tty = int(info.pbsd.e_tdev)
+	// self.Tty = int(info.pbsd.e_tdev)
 
-	self.Priority = int(info.ptinfo.pti_priority)
+	// self.Priority = int(info.ptinfo.pti_priority)
 
-	self.Nice = int(info.pbsd.pbi_nice)
+	// self.Nice = int(info.pbsd.pbi_nice)
 
-	// Get process username. Fallback to UID if username is not available.
-	uid := strconv.Itoa(int(info.pbsd.pbi_uid))
-	user, err := user.LookupId(uid)
-	if err == nil && user.Username != "" {
-		self.Username = user.Username
-	} else {
-		self.Username = uid
-	}
+	// // Get process username. Fallback to UID if username is not available.
+	// uid := strconv.Itoa(int(info.pbsd.pbi_uid))
+	// user, err := user.LookupId(uid)
+	// if err == nil && user.Username != "" {
+	// 	self.Username = user.Username
+	// } else {
+	// 	self.Username = uid
+	// }
 
 	return nil
 }
 
 // Get returns process memory data
 func (self *ProcMem) Get(pid int) error {
-	info := C.struct_proc_taskallinfo{}
+	// info := C.struct_proc_taskallinfo{}
 
-	if err := taskInfo(pid, &info); err != nil {
-		return err
-	}
+	// if err := taskInfo(pid, &info); err != nil {
+	// 	return err
+	// }
 
-	self.Size = uint64(info.ptinfo.pti_virtual_size)
-	self.Resident = uint64(info.ptinfo.pti_resident_size)
-	self.PageFaults = uint64(info.ptinfo.pti_faults)
+	// self.Size = uint64(info.ptinfo.pti_virtual_size)
+	// self.Resident = uint64(info.ptinfo.pti_resident_size)
+	// self.PageFaults = uint64(info.ptinfo.pti_faults)
 
 	return nil
 }
 
 // Get returns process time data
 func (self *ProcTime) Get(pid int) error {
-	info := C.struct_proc_taskallinfo{}
+	// info := C.struct_proc_taskallinfo{}
 
-	if err := taskInfo(pid, &info); err != nil {
-		return err
-	}
+	// if err := taskInfo(pid, &info); err != nil {
+	// 	return err
+	// }
 
-	self.User =
-		uint64(info.ptinfo.pti_total_user) / uint64(time.Millisecond)
+	// self.User =
+	// 	uint64(info.ptinfo.pti_total_user) / uint64(time.Millisecond)
 
-	self.Sys =
-		uint64(info.ptinfo.pti_total_system) / uint64(time.Millisecond)
+	// self.Sys =
+	// 	uint64(info.ptinfo.pti_total_system) / uint64(time.Millisecond)
 
-	self.Total = self.User + self.Sys
+	// self.Total = self.User + self.Sys
 
-	self.StartTime = (uint64(info.pbsd.pbi_start_tvsec) * 1000) +
-		(uint64(info.pbsd.pbi_start_tvusec) / 1000)
+	// self.StartTime = (uint64(info.pbsd.pbi_start_tvsec) * 1000) +
+	// 	(uint64(info.pbsd.pbi_start_tvusec) / 1000)
 
 	return nil
 }
@@ -489,13 +485,13 @@ func sysctlbyname(name string, data interface{}) (err error) {
 }
 
 func taskInfo(pid int, info *C.struct_proc_taskallinfo) error {
-	size := C.int(unsafe.Sizeof(*info))
-	ptr := unsafe.Pointer(info)
+	// size := C.int(unsafe.Sizeof(*info))
+	// ptr := unsafe.Pointer(info)
 
-	n := C.proc_pidinfo(C.int(pid), C.PROC_PIDTASKALLINFO, 0, ptr, size)
-	if n != size {
-		return fmt.Errorf("Could not read process info for pid %d", pid)
-	}
+	// n := C.proc_pidinfo(C.int(pid), C.PROC_PIDTASKALLINFO, 0, ptr, size)
+	// if n != size {
+	// 	return fmt.Errorf("Could not read process info for pid %d", pid)
+	// }
 
 	return nil
 }
